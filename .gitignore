@@ -1,0 +1,4 @@
+mock-config.json
+node_modules
+dist
+coverage

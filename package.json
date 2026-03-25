@@ -1,0 +1,24 @@
+{
+  "name": "oauth-mock-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal OAuth2/OIDC mock server for local application development",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run test/integration"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "testcontainers": "^10.22.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.0.9"
+  }
+}

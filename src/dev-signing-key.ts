@@ -1,0 +1,43 @@
+// Development-only RSA key pair used when the config does not provide an explicit signing key.
+// Keeping this fixed in the repo makes JWTs and JWKS stable across local runs, Docker smoke tests
+// and debugging sessions. It is intentionally not secret and must never be reused outside local/dev.
+export const DEV_SIGNING_KEY_ID = "dev-rs256-key-1";
+
+export const DEV_SIGNING_PRIVATE_KEY_PEM = `-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCsTLl+mG1UCkrQ
+s3Yt/bIuodqEZlashqoH1cLACBBLULNCfXbczLKw5UiVynNFJ9nbaTnOZ4j0sXcC
+bjEFTUggJx+XTzje9cJVQYUfN5NVAK5RaeL7TKNuDf7aGy0+sxSojG/TGNx7DcyV
+ENjf5lIjKEgOIv/QzeZikvYcP6sQRVa25fQMdwO4ZaLPc18ScpGtau51Ff/pUvYA
+oVmXa9xenpAOG3ZH60ribikmmM6Opc3lR8zRoaNOVVsO/iSOlG/a3jyBjJRlcjji
+523qVy8I6zuLk1e98yNWWLbxhZ5etNYn3SlJcTNFc2CtwgIlfjZYAF1uMkOLrlDX
+V5Rl5NG7AgMBAAECggEACDQYT4cRtYL5RZngfOzA/hK7ZRBmUg07V+d9P/K3q+Oq
+FUwEoRtR6rWP+38fITd2L58r9GreN3WiSp2qfIEjIlIai/QRVh7yDhMc3nv2lNZ/
+y4/fZxhNXmEQ4EY+T5JBNTaH4Hok4pWpRvOoD8kB4iX51Z/O+Zxuuq9v7lpjBQGO
+uDstLfeqAh+e1wwdsLxE3bmkOBduZKxhcLdy48i3+2PuAs9G4YR2PLRrXe2FfNE1
+mqQoTfDm91pa0VoHOmpzrtBmSkgno/cV6wUzcaK9eUHW5heWH+9sFyvS3TGNMjHt
+ptq1otVkm2fXNJq251ErmTr0+8Skq5uunbvJc2xSUQKBgQDn1e5/TnbAW7K44U/7
+UtpJoKeZlWcApu+gP0h5isGN4dtbfAkPyi/z2mKeCQPNWpLErzBJ22pywmtpDSI5
+bodrtD6tSEgx+2LdvFXnR7cpevLSVEgwxTuFs8qO3U/oQM0w/rwQQpDuDHn0rnne
+J1uyPrOfZWZdXGBxlpIRwdqEOQKBgQC+QjIOLV92N/Jq7aZL2+Ag8YK2xbtthBFk
+fNLLmg5/7DX6LX3Rw9KbAO+Bn/Tu2lE+jRqUNcEVV5ldls5jePTcOqKII7VIA5yB
+kLHCBSSe62se+R7G22IZFm8IPrp6miJmcX0N9hUR02Vy9i6AbLjaJ+mXDzL2mZo1
+OhDPalQNkwKBgBK+vnj2rC1jfLDsLt5gVZwMbGDDrr9jwA5R75c8O+gv8d+UyNrI
++1WZO84RZohNIX7bt2jRX+sFg0/MKw8/u51exo6WQJgh/l11Y/C+YLXu5gFRpUCk
+QerOnbstc8+QpcanYidianuE8Lty/BGVVxmzbiyeM0erN3UXupnK9dMpAoGAdhOc
+/yF3qmXEZEpDN7co3Sklx4rl7GzXYnb5V/SvZQLS6QYMnP+cGCi3e8oq94W0gE6Q
+HUVTJIyuGOA8DI4H4RnevwDyQ9RB8EM9nr0UYjCW1a0kRaPnuMwscoCDuQ0ppkxu
+oRiFMP/yaSuR5pATFQlKNj7vkQ35H2l+/0rtCVMCgYBbjmW5xT3PrbRN5zrmIPP4
+ZpMZi/afI/Qv+mWEmYgjwfZjJZlX9QNCj7CVsLleQCfqFLgJz5xZuromF2JmiGyj
+ojqQIzm9tqhAVWw1r/BcfBVBIAPcAPiysl8g3+M1aKWBZg4g89KBoCLsR+3VK6/z
+jz22O84xu1SObGL1iIL3iw==
+-----END PRIVATE KEY-----`;
+
+export const DEV_SIGNING_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArEy5fphtVApK0LN2Lf2y
+LqHahGZWrIaqB9XCwAgQS1CzQn123MyysOVIlcpzRSfZ22k5zmeI9LF3Am4xBU1I
+ICcfl0843vXCVUGFHzeTVQCuUWni+0yjbg3+2hstPrMUqIxv0xjcew3MlRDY3+ZS
+IyhIDiL/0M3mYpL2HD+rEEVWtuX0DHcDuGWiz3NfEnKRrWrudRX/6VL2AKFZl2vc
+Xp6QDht2R+tK4m4pJpjOjqXN5UfM0aGjTlVbDv4kjpRv2t48gYyUZXI44udt6lcv
+COs7i5NXvfMjVli28YWeXrTWJ90pSXEzRXNgrcICJX42WABdbjJDi65Q11eUZeTR
+uwIDAQAB
+-----END PUBLIC KEY-----`;

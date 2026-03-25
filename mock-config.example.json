@@ -1,0 +1,62 @@
+{
+  "server": {
+    "port": 8787,
+    "issuer": "http://localhost:8787",
+    "authorizationCodeTtlSeconds": 300
+  },
+  "identities": {
+    "admin": {
+      "idTokenClaims": {
+        "email": "admin@example.test",
+        "sub": "admin-user",
+        "name": "Admin User",
+        "employeeId": "EMP-001",
+        "roles": [
+          "ADMIN"
+        ]
+      }
+    },
+    "support": {
+      "idTokenClaims": {
+        "email": "support@example.test",
+        "sub": "support-user",
+        "name": "Support User",
+        "roles": [
+          "SUPPORT"
+        ]
+      }
+    }
+  },
+  "clients": {
+    "sample-web-app": {
+      "type": "public",
+      "redirectUris": [
+        "http://localhost:3000/callback"
+      ],
+      "defaultIdentity": "admin",
+      "allowedScopes": [
+        "openid",
+        "profile",
+        "email",
+        "offline_access"
+      ],
+      "allowRefreshToken": true
+    },
+    "sample-admin-app": {
+      "type": "confidential",
+      "clientSecret": "local-admin-secret",
+      "redirectUris": [
+        "http://localhost:4200/callback"
+      ],
+      "defaultIdentity": "support",
+      "allowedScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "offline_access"
+      ],
+      "allowRefreshToken": true
+    }
+  }
+}

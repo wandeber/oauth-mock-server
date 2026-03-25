@@ -1,0 +1,25 @@
+{
+  "server": {
+    "port": 8787,
+    "issuer": "http://localhost:8787",
+    "authorizationCodeTtlSeconds": 300
+  },
+  "identities": {
+    "dockerDefault": {
+      "idTokenClaims": {
+        "sub": "docker-user",
+        "email": "docker@local.test",
+        "name": "Docker User"
+      }
+    }
+  },
+  "clients": {
+    "docker-app": {
+      "type": "public",
+      "redirectUris": ["http://localhost:3000/callback"],
+      "defaultIdentity": "dockerDefault",
+      "allowedScopes": ["openid", "email", "profile"],
+      "allowRefreshToken": false
+    }
+  }
+}
