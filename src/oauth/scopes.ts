@@ -65,3 +65,29 @@ export function validateRefreshRequestScopes(
 
   return { ok: true, value: parsedScopes.value };
 }
+
+export function validateClientCredentialsScopes(
+  requestedScope: string | undefined,
+  client: NormalizedClientConfig
+): OAuthResult<string[]> {
+  if (!requestedScope) {
+    return { ok: true, value: [] };
+  }
+
+  const parsedScopes = parseScopeList(requestedScope);
+  if (!parsedScopes.ok) {
+    return parsedScopes;
+  }
+
+  for (const scope of parsedScopes.value) {
+    if (scope === "openid" || scope === "offline_access") {
+      return invalidScope(`Scope "${scope}" is not valid for client_credentials`);
+    }
+
+    if (!client.allowedScopes.includes(scope)) {
+      return invalidScope(`Scope "${scope}" is not allowed for client "${client.id}"`);
+    }
+  }
+
+  return { ok: true, value: parsedScopes.value };
+}

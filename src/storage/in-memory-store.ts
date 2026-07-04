@@ -25,10 +25,16 @@ export interface RefreshTokenStore {
   cleanupExpired(now?: number): void;
 }
 
+export interface ClientAssertionReplayStore {
+  consumeOnce(clientId: string, jwtId: string, expiresAt: number, now?: number): boolean;
+  cleanupExpired(now?: number): void;
+}
+
 export interface InMemoryOauthStores {
   authorizationCodes: AuthorizationCodeStore;
   accessTokens: AccessTokenStore;
   refreshTokens: RefreshTokenStore;
+  clientAssertions: ClientAssertionReplayStore;
 }
 
 export function createAuthorizationCodeStore(): AuthorizationCodeStore {
@@ -118,10 +124,47 @@ export function createRefreshTokenStore(): RefreshTokenStore {
   };
 }
 
+export function createClientAssertionReplayStore(): ClientAssertionReplayStore {
+  const assertionExpirationsByClient = new Map<string, Map<string, number>>();
+
+  return {
+    consumeOnce(clientId, jwtId, expiresAt, now = Date.now()) {
+      this.cleanupExpired(now);
+
+      let clientAssertionExpirations = assertionExpirationsByClient.get(clientId);
+      if (!clientAssertionExpirations) {
+        clientAssertionExpirations = new Map<string, number>();
+        assertionExpirationsByClient.set(clientId, clientAssertionExpirations);
+      }
+
+      if (clientAssertionExpirations.has(jwtId)) {
+        return false;
+      }
+
+      clientAssertionExpirations.set(jwtId, expiresAt);
+      return true;
+    },
+    cleanupExpired(now = Date.now()) {
+      for (const [clientId, clientAssertionExpirations] of assertionExpirationsByClient.entries()) {
+        for (const [jwtId, expiresAt] of clientAssertionExpirations.entries()) {
+          if (expiresAt <= now) {
+            clientAssertionExpirations.delete(jwtId);
+          }
+        }
+
+        if (clientAssertionExpirations.size === 0) {
+          assertionExpirationsByClient.delete(clientId);
+        }
+      }
+    }
+  };
+}
+
 export function createInMemoryOauthStores(): InMemoryOauthStores {
   return {
     authorizationCodes: createAuthorizationCodeStore(),
     accessTokens: createAccessTokenStore(),
-    refreshTokens: createRefreshTokenStore()
+    refreshTokens: createRefreshTokenStore(),
+    clientAssertions: createClientAssertionReplayStore()
   };
 }

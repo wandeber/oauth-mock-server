@@ -14,6 +14,7 @@ This project lets several apps talk to the same local provider without changing 
 
 - `authorization_code + PKCE (S256)` as the primary flow.
 - `refresh_token` grant with strict in-memory rotation.
+- `client_credentials` grant for machine-to-machine clients.
 - `id_token` signed with `RS256`.
 - OIDC and OAuth discovery at `/.well-known/openid-configuration` and `/.well-known/oauth-authorization-server`.
 - Public `JWKS` for signature validation.
@@ -21,6 +22,7 @@ This project lets several apps talk to the same local provider without changing 
 - Multiple `clients` in parallel.
 - A global `identities` catalog reusable across apps.
 - Strict validation of `redirect_uri` and supported parameters.
+- `client_secret_basic`, `client_secret_post`, and `private_key_jwt` token endpoint authentication.
 - Tolerance for extra optional OIDC parameters when they do not change behavior or introduce ambiguity.
 
 ## What It Does Not Support
@@ -28,7 +30,6 @@ This project lets several apps talk to the same local provider without changing 
 - `implicit`.
 - `password`.
 - `device_code`.
-- `client_credentials`.
 - OIDC hybrid flows.
 - `mock` parameters in the URL.
 
@@ -102,9 +103,15 @@ Identity resolution rules:
 Validation rules:
 
 - `redirect_uri` must exactly match one of the client's registered URIs.
+- `redirectUris` are required only for clients that enable the `authorization_code` grant.
 - `scope` can only request values allowed for that client.
-- `offline_access` is required to issue refresh tokens, and the client must have `allowRefreshToken: true`.
+- `offline_access` is required to issue refresh tokens, and the client must enable the `refresh_token` grant
+  directly or through the legacy `allowRefreshToken: true` flag.
 - `client_secret` only applies to `confidential` clients.
+- `client_credentials` clients must be `confidential`.
+- `client_credentials` never issues `id_token` or `refresh_token`.
+- `private_key_jwt` requires a signed `client_assertion` with `iss` and `sub` equal to the `client_id`,
+  an accepted `aud`, a valid `exp`, and a unique `jti` for replay protection.
 - Supported parameters are validated strictly; known optional extra OIDC parameters are tolerated when they do not affect the result.
 
 ## Recommended Example
@@ -150,10 +157,56 @@ Validation rules:
       "defaultIdentity": "support",
       "allowedScopes": ["openid", "profile", "email", "roles", "offline_access"],
       "allowRefreshToken": true
+    },
+    "sample-machine-client": {
+      "type": "confidential",
+      "clientSecret": "local-machine-secret",
+      "grantTypes": ["client_credentials"],
+      "tokenEndpointAuthMethods": ["client_secret_basic", "client_secret_post"],
+      "allowedScopes": ["api.read", "api.write"]
+    },
+    "sample-certificate-client": {
+      "type": "confidential",
+      "grantTypes": ["client_credentials"],
+      "tokenEndpointAuthMethods": ["private_key_jwt"],
+      "clientAssertionKeys": [
+        {
+          "keyId": "local-cert-key",
+          "publicKeyPem": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+        }
+      ],
+      "allowedScopes": ["api.read"]
     }
   }
 }
 ```
+
+For certificate-style client authentication, configure `tokenEndpointAuthMethods` with
+`private_key_jwt` and register the client's verification material in `clientAssertionKeys`.
+Each key can use one of these shapes:
+
+```json
+{ "keyId": "key-1", "publicKeyPem": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----" }
+{ "keyId": "key-1", "certificatePem": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----" }
+{ "keyId": "key-1", "publicJwk": { "kty": "RSA", "n": "...", "e": "AQAB" } }
+```
+
+The token request must send:
+
+```text
+grant_type=client_credentials
+client_id=sample-certificate-client
+client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+client_assertion=<signed JWT>
+scope=api.read
+```
+
+The assertion must be signed with one of the registered keys. The mock accepts
+`RS256`, `RS384`, `RS512`, `PS256`, `PS384`, and `PS512` to cover PingOne-style
+`PRIVATE_KEY_JWT` and Microsoft Entra certificate assertions. By default, `aud`
+can be the issuer or the local token endpoint; add `clientAssertionAudiences`
+when a Docker hostname or another local URL should also be accepted. The `jti`
+claim is required and can only be used once until the assertion expires.
 
 If you do not define `server.signing`, the server uses the fixed development key included in the repository.
 If you want your own key, you can add this optional block inside `server`:
@@ -175,6 +228,7 @@ If you want your own key, you can add this optional block inside `server`:
 | `authorization_code` | Supported | Primary mock flow |
 | PKCE `S256` | Supported | Required for authorization code |
 | `refresh_token` grant | Supported | With strict in-memory rotation |
+| `client_credentials` grant | Supported | Confidential machine-to-machine clients |
 | `id_token` signed with `RS256` | Supported | Verifiable through JWKS |
 | `JWKS` | Supported | Public keys for signature validation |
 | `userinfo` | Supported | Returns claims consistent with the access token |
@@ -185,13 +239,13 @@ If you want your own key, you can add this optional block inside `server`:
 | Exact `redirect_uri` | Supported | Strict matching |
 | `client_secret_basic` | Supported | For `confidential` clients |
 | `client_secret_post` | Supported | For `confidential` clients |
+| `private_key_jwt` | Supported | For `confidential` clients with registered public keys or certificates |
 | `/.well-known/oauth-authorization-server` | Supported | OAuth discovery |
 | `/.well-known/openid-configuration` | Supported | OIDC discovery |
 | Extra optional OIDC parameters | Partial | Tolerated when they do not affect behavior |
 | `implicit` | Not supported | Out of scope |
 | `password` | Not supported | Out of scope |
 | `device_code` | Not supported | Out of scope |
-| `client_credentials` | Not supported | Out of scope |
 | `mock` URL parameters | Not supported | Selection is config-driven |
 
 ## Tests

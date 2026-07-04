@@ -24,11 +24,22 @@ export const TOLERATED_AUTHORIZE_PARAMS = new Set([
 
 export const SUPPORTED_RESPONSE_TYPES = ["code"] as const;
 export const SUPPORTED_RESPONSE_MODES = ["query"] as const;
-export const SUPPORTED_GRANT_TYPES = ["authorization_code", "refresh_token"] as const;
+export const SUPPORTED_GRANT_TYPES = ["authorization_code", "refresh_token", "client_credentials"] as const;
 export const SUPPORTED_SUBJECT_TYPES = ["public"] as const;
 export const SUPPORTED_CODE_CHALLENGE_METHODS = ["S256"] as const;
 export const SUPPORTED_TOKEN_ENDPOINT_AUTH_METHODS = [
   "none",
   "client_secret_basic",
-  "client_secret_post"
+  "client_secret_post",
+  "private_key_jwt"
+] as const;
+export const CLIENT_ASSERTION_TYPE_JWT_BEARER =
+  "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+export const SUPPORTED_CLIENT_ASSERTION_ALGORITHMS = [
+  "RS256",
+  "RS384",
+  "RS512",
+  "PS256",
+  "PS384",
+  "PS512"
 ] as const;

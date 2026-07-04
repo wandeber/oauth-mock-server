@@ -15,8 +15,8 @@ import type {
 } from "../storage/types";
 import { doesPkceVerifierMatch, PKCE_CODE_VERIFIER_PATTERN } from "../crypto/pkce";
 import { buildIdTokenClaims } from "./claims";
-import { invalidGrant, invalidRequest, invalidScope, serverError, type OAuthResult } from "./errors";
-import { validateRefreshRequestScopes } from "./scopes";
+import { invalidGrant, invalidRequest, serverError, unauthorizedClient, type OAuthResult } from "./errors";
+import { validateClientCredentialsScopes, validateRefreshRequestScopes } from "./scopes";
 import { resolveClientIdentity } from "./identities";
 
 export function cleanupExpiredOauthStores(
@@ -26,6 +26,7 @@ export function cleanupExpiredOauthStores(
   stores.authorizationCodes.cleanupExpired(now);
   stores.accessTokens.cleanupExpired(now);
   stores.refreshTokens.cleanupExpired(now);
+  stores.clientAssertions.cleanupExpired(now);
 }
 
 export function handleAuthorizationCodeGrant(
@@ -34,6 +35,10 @@ export function handleAuthorizationCodeGrant(
   client: NormalizedClientConfig,
   stores: InMemoryOauthStores
 ): OAuthResult<TokenIssuanceResult> {
+  if (!client.grantTypes.includes("authorization_code")) {
+    return unauthorizedClient(`Client "${client.id}" is not allowed to use authorization_code`);
+  }
+
   const code = toOptionalString(form.code);
   if (!code) {
     return invalidRequest("code is required");
@@ -106,6 +111,10 @@ export function handleRefreshTokenGrant(
   client: NormalizedClientConfig,
   stores: InMemoryOauthStores
 ): OAuthResult<TokenIssuanceResult> {
+  if (!client.grantTypes.includes("refresh_token")) {
+    return unauthorizedClient(`Client "${client.id}" is not allowed to use refresh_token`);
+  }
+
   const refreshTokenValue = toOptionalString(form.refresh_token);
   if (!refreshTokenValue) {
     return invalidRequest("refresh_token is required");
@@ -163,6 +172,34 @@ export function handleRefreshTokenGrant(
   return { ok: true, value: issuance };
 }
 
+export function handleClientCredentialsGrant(
+  form: Record<string, string>,
+  config: NormalizedMockServerConfig,
+  client: NormalizedClientConfig,
+  stores: InMemoryOauthStores
+): OAuthResult<TokenIssuanceResult> {
+  if (!client.grantTypes.includes("client_credentials")) {
+    return unauthorizedClient(`Client "${client.id}" is not allowed to use client_credentials`);
+  }
+
+  if (client.type !== "confidential") {
+    return unauthorizedClient("client_credentials requires a confidential client");
+  }
+
+  const requestedScope = toOptionalString(form.scope);
+  const grantedScopes = validateClientCredentialsScopes(requestedScope, client);
+  if (!grantedScopes.ok) {
+    return grantedScopes;
+  }
+
+  const issuance = issueClientCredentialsTokenSet(config, client, {
+    grantedScopes: grantedScopes.value
+  });
+  stores.accessTokens.save(issuance.accessTokenRecord);
+
+  return { ok: true, value: issuance };
+}
+
 export function issueTokenSet(
   config: NormalizedMockServerConfig,
   client: NormalizedClientConfig,
@@ -179,7 +216,10 @@ export function issueTokenSet(
   const accessTokenRecord: AccessTokenRecord = {
     token: accessTokenValue,
     clientId: client.id,
-    identityName: identity.name,
+    subject: {
+      type: "user",
+      identityName: identity.name
+    },
     grantedScopes: context.grantedScopes,
     authTime: context.authTime,
     issuedAt: nowMilliseconds,
@@ -223,6 +263,43 @@ export function issueTokenSet(
     payload,
     accessTokenRecord,
     refreshTokenRecord
+  };
+}
+
+export function issueClientCredentialsTokenSet(
+  config: NormalizedMockServerConfig,
+  client: NormalizedClientConfig,
+  context: {
+    grantedScopes: string[];
+  }
+): TokenIssuanceResult {
+  const nowMilliseconds = Date.now();
+  const accessTokenValue = issueOpaqueToken("atk");
+  const accessTokenRecord: AccessTokenRecord = {
+    token: accessTokenValue,
+    clientId: client.id,
+    subject: {
+      type: "client",
+      clientId: client.id
+    },
+    grantedScopes: context.grantedScopes,
+    issuedAt: nowMilliseconds,
+    expiresAt: nowMilliseconds + config.server.accessTokenTtlSeconds * 1000
+  };
+
+  const payload: Record<string, unknown> = {
+    access_token: accessTokenValue,
+    token_type: "Bearer",
+    expires_in: config.server.accessTokenTtlSeconds
+  };
+
+  if (context.grantedScopes.length > 0) {
+    payload.scope = context.grantedScopes.join(" ");
+  }
+
+  return {
+    payload,
+    accessTokenRecord
   };
 }
 

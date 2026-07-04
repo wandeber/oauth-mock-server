@@ -5,6 +5,7 @@ import {
   createPkcePair,
   fetchJson,
   exchangeAuthorizationCode,
+  exchangeClientCredentials,
   authorizeCode,
   readJson,
   readJwks
@@ -13,6 +14,8 @@ import { assertJwtSignatureWithJwks, decodeJwtPayload } from "../support/jwt";
 import {
   PROJECT_DIR,
   TEST_DOCKER_CLIENT_ID,
+  TEST_DOCKER_MACHINE_CLIENT_ID,
+  TEST_DOCKER_MACHINE_CLIENT_SECRET,
   TEST_DOCKER_REDIRECT_URI,
   TEST_STANDARD_SCOPES
 } from "../support/constants";
@@ -67,5 +70,18 @@ describe("docker image smoke test", () => {
 
     const idTokenClaims = decodeJwtPayload(String(tokenPayload.id_token));
     expect(idTokenClaims.sub).toBe("docker-user");
+
+    const machineTokenResponse = await exchangeClientCredentials(baseUrl, {
+      clientId: TEST_DOCKER_MACHINE_CLIENT_ID,
+      clientSecret: TEST_DOCKER_MACHINE_CLIENT_SECRET,
+      authMethod: "basic",
+      scope: TEST_STANDARD_SCOPES.machineRead
+    });
+    const machineTokenPayload = await readJson(machineTokenResponse);
+    expect(machineTokenResponse.status).toBe(200);
+    expect(machineTokenPayload.access_token).toBeTruthy();
+    expect(machineTokenPayload.scope).toBe(TEST_STANDARD_SCOPES.machineRead);
+    expect(machineTokenPayload.id_token).toBeUndefined();
+    expect(machineTokenPayload.refresh_token).toBeUndefined();
   });
 });

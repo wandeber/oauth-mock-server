@@ -20,6 +20,13 @@
       "defaultIdentity": "dockerDefault",
       "allowedScopes": ["openid", "email", "profile"],
       "allowRefreshToken": false
+    },
+    "docker-machine": {
+      "type": "confidential",
+      "clientSecret": "docker-machine-secret",
+      "grantTypes": ["client_credentials"],
+      "tokenEndpointAuthMethods": ["client_secret_basic", "client_secret_post"],
+      "allowedScopes": ["api.read"]
     }
   }
 }

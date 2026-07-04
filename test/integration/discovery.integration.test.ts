@@ -18,7 +18,13 @@ describe("oauth mock server discovery", () => {
       expect(oauthMetadata.jwks_uri).toBe(`${baseUrl}/jwks`);
       expect(oauthMetadata.response_types_supported).toEqual(expect.arrayContaining(["code"]));
       expect(oauthMetadata.grant_types_supported).toEqual(
-        expect.arrayContaining(["authorization_code", "refresh_token"])
+        expect.arrayContaining(["authorization_code", "refresh_token", "client_credentials"])
+      );
+      expect(oauthMetadata.token_endpoint_auth_methods_supported).toEqual(
+        expect.arrayContaining(["client_secret_basic", "client_secret_post", "private_key_jwt"])
+      );
+      expect(oauthMetadata.token_endpoint_auth_signing_alg_values_supported).toEqual(
+        expect.arrayContaining(["RS256", "PS256"])
       );
       expect(oauthMetadata.id_token_signing_alg_values_supported).toEqual(
         expect.arrayContaining(["RS256"])

@@ -1,7 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { authenticateClient } from "../../oauth/client-auth";
-import { cleanupExpiredOauthStores, handleAuthorizationCodeGrant, handleRefreshTokenGrant } from "../../oauth/token-service";
+import {
+  cleanupExpiredOauthStores,
+  handleAuthorizationCodeGrant,
+  handleClientCredentialsGrant,
+  handleRefreshTokenGrant
+} from "../../oauth/token-service";
 import type { HttpHandlerDependencies } from "../types";
 import { parseBody, readBody } from "../body";
 import { toOptionalString } from "../request";
@@ -23,7 +28,12 @@ export async function handleToken(
     return;
   }
 
-  const authenticationResult = authenticateClient(req.headers.authorization, form, config);
+  const authenticationResult = authenticateClient(
+    req.headers.authorization,
+    form,
+    config,
+    stores.clientAssertions
+  );
   if (!authenticationResult.ok) {
     sendOauthError(
       res,
@@ -50,6 +60,17 @@ export async function handleToken(
 
   if (grantType === "refresh_token") {
     const issuance = handleRefreshTokenGrant(form, config, authenticationResult.client, stores);
+    if (!issuance.ok) {
+      sendOauthError(res, issuance.statusCode, issuance.error, issuance.errorDescription);
+      return;
+    }
+
+    sendJson(res, 200, issuance.value.payload);
+    return;
+  }
+
+  if (grantType === "client_credentials") {
+    const issuance = handleClientCredentialsGrant(form, config, authenticationResult.client, stores);
     if (!issuance.ok) {
       sendOauthError(res, issuance.statusCode, issuance.error, issuance.errorDescription);
       return;

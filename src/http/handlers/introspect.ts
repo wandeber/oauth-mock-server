@@ -34,12 +34,16 @@ export async function handleIntrospect(
 
   const accessTokenRecord = stores.accessTokens.get(tokenValue);
   if (accessTokenRecord && accessTokenRecord.expiresAt > Date.now()) {
-    const identity = config.identities[accessTokenRecord.identityName];
+    const subject =
+      accessTokenRecord.subject.type === "user"
+        ? config.identities[accessTokenRecord.subject.identityName]?.claims.sub ??
+          accessTokenRecord.subject.identityName
+        : accessTokenRecord.subject.clientId;
     sendJson(res, 200, {
       active: true,
       token_type: "Bearer",
       client_id: accessTokenRecord.clientId,
-      sub: identity?.claims.sub ?? accessTokenRecord.identityName,
+      sub: subject,
       scope: accessTokenRecord.grantedScopes.join(" "),
       exp: Math.floor(accessTokenRecord.expiresAt / 1000)
     });

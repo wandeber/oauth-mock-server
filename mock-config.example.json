@@ -57,6 +57,21 @@
         "offline_access"
       ],
       "allowRefreshToken": true
+    },
+    "sample-machine-client": {
+      "type": "confidential",
+      "clientSecret": "local-machine-secret",
+      "grantTypes": [
+        "client_credentials"
+      ],
+      "tokenEndpointAuthMethods": [
+        "client_secret_basic",
+        "client_secret_post"
+      ],
+      "allowedScopes": [
+        "api.read",
+        "api.write"
+      ]
     }
   }
 }

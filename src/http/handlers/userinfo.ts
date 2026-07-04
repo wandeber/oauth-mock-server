@@ -34,7 +34,17 @@ export function handleUserInfo(
     return;
   }
 
-  const identity = config.identities[accessTokenRecord.identityName];
+  if (accessTokenRecord.subject.type !== "user") {
+    sendOauthError(
+      res,
+      403,
+      "insufficient_scope",
+      "userinfo requires a user access token"
+    );
+    return;
+  }
+
+  const identity = config.identities[accessTokenRecord.subject.identityName];
   if (!identity) {
     sendOauthError(res, 500, "server_error", "Resolved identity no longer exists");
     return;

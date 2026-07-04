@@ -1,6 +1,7 @@
 import type { NormalizedMockServerConfig } from "../config/types";
 import {
   SUPPORTED_CODE_CHALLENGE_METHODS,
+  SUPPORTED_CLIENT_ASSERTION_ALGORITHMS,
   SUPPORTED_GRANT_TYPES,
   SUPPORTED_RESPONSE_MODES,
   SUPPORTED_RESPONSE_TYPES,
@@ -51,6 +52,7 @@ export function buildAuthorizationServerMetadata(config: NormalizedMockServerCon
     token_endpoint_auth_methods_supported: Array.from(
       new Set([...SUPPORTED_TOKEN_ENDPOINT_AUTH_METHODS, ...tokenEndpointAuthMethods])
     ).sort(),
+    token_endpoint_auth_signing_alg_values_supported: [...SUPPORTED_CLIENT_ASSERTION_ALGORITHMS],
     id_token_signing_alg_values_supported: [config.server.signing.algorithm]
   };
 }

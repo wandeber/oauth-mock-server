@@ -1,4 +1,4 @@
-import type { NormalizedClientConfig } from "../config/types";
+import type { NormalizedClientConfig, TokenEndpointAuthMethod } from "../config/types";
 
 export interface OAuthErrorResult {
   ok: false;
@@ -17,6 +17,7 @@ export type OAuthResult<T> = OAuthSuccessResult<T> | OAuthErrorResult;
 export interface AuthenticationResult {
   ok: true;
   client: NormalizedClientConfig;
+  method: TokenEndpointAuthMethod;
 }
 
 export interface AuthenticationError {
@@ -51,6 +52,10 @@ export function invalidGrant(errorDescription: string): OAuthErrorResult {
 
 export function invalidScope(errorDescription: string): OAuthErrorResult {
   return oauthError(400, "invalid_scope", errorDescription);
+}
+
+export function unauthorizedClient(errorDescription: string): OAuthErrorResult {
+  return oauthError(400, "unauthorized_client", errorDescription);
 }
 
 export function invalidClient(errorDescription: string): AuthenticationError {

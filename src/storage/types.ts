@@ -17,9 +17,17 @@ export interface AuthorizationCodeRecord {
 export interface AccessTokenRecord {
   token: string;
   clientId: string;
-  identityName: string;
+  subject:
+    | {
+        type: "user";
+        identityName: string;
+      }
+    | {
+        type: "client";
+        clientId: string;
+      };
   grantedScopes: string[];
-  authTime: number;
+  authTime?: number;
   issuedAt: number;
   expiresAt: number;
 }

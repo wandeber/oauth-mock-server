@@ -1,9 +1,15 @@
+import crypto from "node:crypto";
+
 import {
+  TEST_CLIENT_ASSERTION_KEY_ID,
   TEST_CONFIDENTIAL_CLIENT_ID,
   TEST_CONFIDENTIAL_CLIENT_SECRET,
   TEST_CONFIDENTIAL_REDIRECT_URI,
   TEST_EMAIL_ONLY_CLIENT_ID,
   TEST_EMAIL_ONLY_REDIRECT_URI,
+  TEST_MACHINE_CLIENT_ID,
+  TEST_MACHINE_CLIENT_SECRET,
+  TEST_PRIVATE_KEY_JWT_CLIENT_ID,
   TEST_PUBLIC_CLIENT_ID,
   TEST_PUBLIC_REDIRECT_URI,
   TEST_RSA_KEY_ID,
@@ -69,7 +75,36 @@ export function buildModernConfig(options: ModernConfigOptions = {}): JsonObject
         defaultIdentity: "support",
         allowedScopes: ["openid", "email", "profile", "offline_access"],
         allowRefreshToken: true
+      },
+      [TEST_MACHINE_CLIENT_ID]: {
+        type: "confidential",
+        clientSecret: TEST_MACHINE_CLIENT_SECRET,
+        grantTypes: ["client_credentials"],
+        tokenEndpointAuthMethods: ["client_secret_basic", "client_secret_post"],
+        allowedScopes: ["api.read", "api.write"]
+      },
+      [TEST_PRIVATE_KEY_JWT_CLIENT_ID]: {
+        type: "confidential",
+        grantTypes: ["client_credentials"],
+        tokenEndpointAuthMethods: ["private_key_jwt"],
+        clientAssertionKeys: [
+          {
+            keyId: TEST_CLIENT_ASSERTION_KEY_ID,
+            publicJwk: buildClientAssertionPublicJwk()
+          }
+        ],
+        allowedScopes: ["api.read"]
       }
     }
+  };
+}
+
+function buildClientAssertionPublicJwk(): Record<string, unknown> {
+  const publicKey = crypto.createPublicKey(TEST_RSA_PRIVATE_KEY_PEM);
+  return {
+    ...publicKey.export({ format: "jwk" }),
+    kid: TEST_CLIENT_ASSERTION_KEY_ID,
+    use: "sig",
+    alg: "PS256"
   };
 }

@@ -36,6 +36,10 @@ export function handleAuthorize(
     sendOauthError(res, 400, "unauthorized_client", "Unknown client_id");
     return;
   }
+  if (!client.grantTypes.includes("authorization_code")) {
+    sendOauthError(res, 400, "unauthorized_client", "Client is not allowed to use authorization_code");
+    return;
+  }
 
   const responseType = readRequiredQueryParameter(requestUrl, "response_type");
   if (!responseType.ok) {

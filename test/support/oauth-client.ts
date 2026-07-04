@@ -14,7 +14,55 @@ export function createPkcePair(seed = crypto.randomBytes(32).toString("hex")): P
 }
 
 export function buildBasicAuthHeader(clientId: string, clientSecret: string): string {
-  return `Basic ${Buffer.from(`${clientId}:${clientSecret}`, "utf8").toString("base64")}`;
+  // OAuth client_secret_basic form-encodes both values before base64. Keeping
+  // test traffic spec-shaped catches regressions for secrets containing ":" or
+  // other reserved characters.
+  const encodedCredentials = `${encodeFormComponent(clientId)}:${encodeFormComponent(clientSecret)}`;
+  return `Basic ${Buffer.from(encodedCredentials, "utf8").toString("base64")}`;
+}
+
+export function createClientAssertion(input: {
+  clientId: string;
+  audience: string;
+  privateKeyPem: string;
+  keyId?: string;
+  x5tS256?: string;
+  algorithm?: "RS256" | "PS256";
+  jwtId?: string;
+  includeJwtId?: boolean;
+  payloadOverrides?: Record<string, unknown>;
+  nowSeconds?: number;
+  expiresInSeconds?: number;
+}): string {
+  const algorithm = input.algorithm ?? "PS256";
+  const nowSeconds = input.nowSeconds ?? Math.floor(Date.now() / 1000);
+  const header: Record<string, unknown> = {
+    alg: algorithm,
+    typ: "JWT",
+    ...(input.keyId ? { kid: input.keyId } : {}),
+    ...(input.x5tS256 ? { "x5t#S256": input.x5tS256 } : {})
+  };
+  const payload = {
+    aud: input.audience,
+    exp: nowSeconds + (input.expiresInSeconds ?? 300),
+    iat: nowSeconds,
+    iss: input.clientId,
+    nbf: nowSeconds,
+    sub: input.clientId,
+    ...(input.includeJwtId === false ? {} : { jti: input.jwtId ?? crypto.randomUUID() }),
+    ...(input.payloadOverrides ?? {})
+  };
+  const signingInput = `${toBase64UrlJson(header)}.${toBase64UrlJson(payload)}`;
+  const key =
+    algorithm === "PS256"
+      ? {
+          key: input.privateKeyPem,
+          padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST
+        }
+      : input.privateKeyPem;
+  const signature = crypto.sign("sha256", Buffer.from(signingInput, "utf8"), key);
+  return `${signingInput}.${signature.toString("base64url")}`;
 }
 
 export async function readJson(response: Response): Promise<Record<string, unknown>> {
@@ -143,4 +191,45 @@ export async function exchangeRefreshToken(baseUrl: string, input: {
     headers,
     body: body.toString()
   });
+}
+
+export async function exchangeClientCredentials(baseUrl: string, input: {
+  clientId: string;
+  scope?: string;
+  clientSecret?: string;
+  authMethod?: "basic" | "post" | "private_key_jwt";
+  clientAssertion?: string;
+}): Promise<Response> {
+  const body = new URLSearchParams({
+    client_id: input.clientId,
+    grant_type: "client_credentials",
+    ...(input.scope ? { scope: input.scope } : {})
+  });
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/x-www-form-urlencoded"
+  };
+
+  if (input.authMethod === "basic" && input.clientSecret) {
+    headers.Authorization = buildBasicAuthHeader(input.clientId, input.clientSecret);
+  } else if (input.authMethod === "private_key_jwt" && input.clientAssertion) {
+    body.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+    body.set("client_assertion", input.clientAssertion);
+  } else if (input.clientSecret) {
+    body.set("client_secret", input.clientSecret);
+  }
+
+  return await fetch(`${baseUrl}/token`, {
+    method: "POST",
+    headers,
+    body: body.toString()
+  });
+}
+
+function toBase64UrlJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+function encodeFormComponent(value: string): string {
+  return encodeURIComponent(value).replace(/%20/g, "+");
 }
